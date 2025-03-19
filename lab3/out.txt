@@ -1,0 +1,20 @@
+/home/andreiul/facultate/SO1/lab3/
+test_dir/
+
+another_dir
+2025-03-12 09:11:12.851423797
+ bober.jpeg : 34
+2025-03-12 09:10:41.102699124
+ tripitropi.jpeg : 15
+2025-03-12 09:10:58.543093431
+ volando.jpeg : 25
+
+brodir
+2025-03-12 08:35:26.395353655
+ file1.txt : 6
+2025-03-12 09:08:15.491811185
+ file2.txt : 1
+2025-03-19 08:06:22.439621404
+ out.txt : 2
+2025-03-12 08:37:02.318891768
+ tralalero.jpg : 58

@@ -1,0 +1,34 @@
+#! /usr/bin/env bash
+
+if [ $# -lt 2 ] 
+then echo "Incorrect usage; proper use: $0 <dirname> <filename>" ; exit 1
+fi
+
+dirname=$1
+filename=$2
+
+basedir=`pwd`
+
+if [[ ! -d $dirname || ! -f $filename ]]
+then echo "directory or file is invalid!"; exit 2
+fi
+
+script=$(basename "$0")
+
+echo "$dirname" > $filename
+
+cd $dirname
+
+for file in `ls`
+do 
+    if [ -f $file ] 
+    then echo "`stat $file | grep "Change" | cut -d " " --fields=2,3`" >> $basedir/$filename;
+    echo "`stat $file | grep "File" | cut -d ":" --fields=2` : `wc -l $file | cut -d " " -f 1`" >> $basedir/$filename
+    elif [ -d $file ]
+    then cp $basedir/$script $basedir/$file ;
+    fi
+done
+
+cd ..
+
+cat $filename
