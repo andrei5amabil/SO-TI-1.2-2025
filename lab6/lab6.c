@@ -31,16 +31,28 @@ int main(int argc, char **argv){
 
     struct stat filestat;
     stat(argv[1], &filestat);
-    int outfd = open("out.txt", O_WRONLY | O_CREAT | O_TRUNC);
+    char outname[256];
+    strcpy(outname, "out.txt");
+    int outfd = open(outname, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IXUSR);
     if( outfd == -1 ){
         perror("error creating out file");
         exit(-1);
     }
 
-    write(outfd, filestat.st_uid, sizeof(nrcif));
+    char s[32];
+    int len = snprintf(s, sizeof(s), "%d\n", nrcif);
+    write(outfd, s, len);
 
-    printf("%d\n", nrcif);
+    len = snprintf(s, sizeof(s), "%d\n", filestat.st_uid);
+    write(outfd, s, len);
+
+    len = snprintf(s, sizeof(s), "%ld\n", filestat.st_size);
+    write(outfd, s, len);
+
+    symlink(outname, "out");
 
     close(fd);
+
+    close(outfd);
     return 0;
 }
