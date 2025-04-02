@@ -1,0 +1,3 @@
+shell script care primeste un fisier .txt ca arg si inlocuieste 
+adr de email pe care le gaseste cu [EMAIL CENZURAT] 
+si toate nr de telefon cu 07xxxxxxx sau +40xxxxxxxx sau [NUMAR ASCUNS]
