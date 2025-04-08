@@ -139,8 +139,8 @@ void read_all_treasures(const char* filename) {
         read(fd, t.clue, sizeof(t.clue));
         read(fd, &t.value, sizeof(t.value));
 
-        printf("Found treasure ID: %d\n", t.id); //to replace with write
         write_treasure(&t, 1);
+        write(1,"\n",1);
     }
     
     close(fd);
@@ -171,10 +171,56 @@ void read_specific_treasure(const char* filename, int search_id) {
     close(fd);
 }
 
+void remove_treasure(const char* filename, char* hunt, int id) {
+    int fd = open(filename, O_RDONLY);
+
+    char* aux_path = create_filepath(hunt, "aux");
+    int tmp_fd = open(aux_path, O_WRONLY | O_CREAT | O_TRUNC, S_IXUSR | S_IRUSR | S_IWUSR);
+
+    if (fd == -1) {
+        perror("Error opening file");
+        return;
+    }
+
+    if (tmp_fd == -1) {
+        perror("Error opening file");
+        return;
+    }
+    
+    treasure t;
+    while (read(fd, &t.id, sizeof(t.id)) > 0) {
+
+        read(fd, t.user, sizeof(t.user));
+        read(fd, &t.longi, sizeof(t.longi));
+        read(fd, &t.lati, sizeof(t.lati));
+        read(fd, t.clue, sizeof(t.clue));
+        read(fd, &t.value, sizeof(t.value));
+
+        write_treasure(&t, 1);
+        if(t.id != id) write_treasure(&t, tmp_fd);
+        write(1,"\n",1);
+    }
+
+    read_all_treasures(aux_path);
+
+    remove(filename);
+    rename(aux_path, filename);
+
+    close(fd);
+    close(tmp_fd);
+}
+
 int is_dir(char* dirname){
     struct stat dirstat;
     stat(dirname, &dirstat);
     return S_ISDIR(dirstat.st_mode);
+}
+
+int is_id(char* id){
+    for(int i = 0; i < strlen(id); i++){
+        if(!isdigit(id[i])) return 0;
+    }
+    return 1;
 }
 
 int main(int argc, char **argv){
@@ -253,10 +299,17 @@ int main(int argc, char **argv){
             break;
         case 4: //remove_treasure case
 
-            
+            if(argc < 4){
+                perror("no treasure id given; please provide a valid treasure id");
+                exit(-1);
+            } else if(!is_id(argv[3])){
+                perror("not a valid treasure id;");
+                exit(-1);
+            }
+            remove_treasure(filepath, argv[2], atoi(argv[3]));
 
             break;
-        case 5:
+        case 5: //remove_hunt case
             break;
         default:
             break;
