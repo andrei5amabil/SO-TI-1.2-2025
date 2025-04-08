@@ -1,5 +1,0 @@
-treasure001
-user001
-12.453,89.002
-under a rock
-999
