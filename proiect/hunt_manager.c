@@ -16,7 +16,7 @@ typedef struct{
     int value;
 } treasure;
 
-char* create_filepath(char* dir, char* file){
+char* create_filepath(char* dir, const char* file){
     int filepath_len = strlen(dir) + strlen(file) + 2;
     char *filepath = malloc(sizeof(char) * filepath_len);
     if(!filepath){
@@ -29,27 +29,39 @@ char* create_filepath(char* dir, char* file){
 
 void write_treasure(treasure* t, int fd){
     char buffer[1024];
-    int bytes_printed = snprintf(buffer, sizeof(buffer), "%d", t->id);
-    write(fd, "id: ", 4);
-    write(fd, buffer, bytes_printed);
+    int bytes_printed;
 
-    write(fd, "user: ", 7);
-    write(fd, t->user, sizeof(t->user));
+    if(fd == 1){
+        bytes_printed = snprintf(buffer, sizeof(buffer), "%d", t->id);
+        write(fd, "id: ", 4);
+        write(fd, buffer, bytes_printed);
 
-    bytes_printed = snprintf(buffer, sizeof(buffer), "%f", t->longi);
-    write(fd, "longitude: ", 12);
-    write(fd, buffer, bytes_printed);
+        write(fd, "user: ", 7);
+        write(fd, t->user, sizeof(t->user));
 
-    bytes_printed = snprintf(buffer, sizeof(buffer), "%f", t->lati);
-    write(fd, "latitude: ", 11);
-    write(fd, buffer, bytes_printed);
+        bytes_printed = snprintf(buffer, sizeof(buffer), "%f", t->longi);
+        write(fd, "longitude: ", 12);
+        write(fd, buffer, bytes_printed);
 
-    write(fd, "clue: ", 7);
-    write(fd, t->clue, sizeof(t->clue));
+        bytes_printed = snprintf(buffer, sizeof(buffer), "%f", t->lati);
+        write(fd, "latitude: ", 11);
+        write(fd, buffer, bytes_printed);
 
-    bytes_printed = snprintf(buffer, sizeof(buffer), "%d", t->value);
-    write(fd, "value: ", 8);
-    write(fd, buffer, bytes_printed);
+        write(fd, "clue: ", 7);
+        write(fd, t->clue, sizeof(t->clue));
+
+        bytes_printed = snprintf(buffer, sizeof(buffer), "%d", t->value);
+        write(fd, "value: ", 8);
+        write(fd, buffer, bytes_printed);
+    }
+    else{
+        write(fd, &t->id, sizeof(t->id));
+        write(fd, t->user, sizeof(t->user));
+        write(fd, &t->longi, sizeof(t->longi));
+        write(fd, &t->lati, sizeof(t->lati));
+        write(fd, t->clue, sizeof(t->clue));
+        write(fd, &t->value, sizeof(t->value));
+    }
 }
 
 treasure* get_treasure_data(int fd){
@@ -96,83 +108,95 @@ treasure* get_treasure_data(int fd){
         t->value = atoi(buffer);
     }
     else{
-        bytes_read = read(fd, buffer, sizeof(buffer)-1);
-        buffer[bytes_read] = '\0';
-        t->id = atoi(buffer);
-
-        bytes_read = read(fd, buffer, sizeof(buffer)-1);
-        buffer[bytes_read] = '\0';
-        strcpy(t->user, buffer);
-
-        bytes_read = read(fd, buffer, sizeof(buffer)-1);
-        buffer[bytes_read] = '\0';
-        t->longi = atof(buffer);
-
-        bytes_read = read(fd, buffer, sizeof(buffer)-1);
-        buffer[bytes_read] = '\0';
-        t->lati = atof(buffer);
-
-        bytes_read = read(fd, buffer, sizeof(buffer)-1);
-        buffer[bytes_read] = '\0';
-        strcpy(t->clue, buffer);
-
-        bytes_read = read(fd, buffer, sizeof(buffer)-1);
-        buffer[bytes_read] = '\0';
-        t->value = atoi(buffer);
+        read(fd, &t->id, sizeof(t->id));
+        read(fd, t->user, sizeof(t->user));
+        read(fd, &t->longi, sizeof(t->longi));
+        read(fd, &t->lati, sizeof(t->lati));
+        read(fd, t->clue, sizeof(t->clue));
+        read(fd, &t->value, sizeof(t->value));
     }
     return t;
 }
 
-int main(int argc, char **argv){
-    DIR* dirp = opendir(argv[1]);
+void read_all_treasures(const char* filename) {
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        perror("Error opening file");
+        return;
+    }
+    
+    treasure t;
+    while (read(fd, &t.id, sizeof(t.id)) > 0) {
+        // Read remaining fields
+        read(fd, t.user, sizeof(t.user));
+        read(fd, &t.longi, sizeof(t.longi));
+        read(fd, &t.lati, sizeof(t.lati));
+        read(fd, t.clue, sizeof(t.clue));
+        read(fd, &t.value, sizeof(t.value));
+        
+        // Process the treasure
+        printf("Found treasure ID: %d\n", t.id);
+        write_treasure(&t, 1);
+    }
+    
+    close(fd);
+}
 
-    if(dirp == NULL){
-        perror("not a dir");
+int main(int argc, char **argv){
+    
+    if(argc < 3){
+        perror("args error; proper usage: treasure_manager --opt <hunt_id> <id>");
+        exit(-1);
+    }
+    
+    int s = 0;
+    if( !strcmp("--add", argv[1]) ){
+        s = 1;
+    } else if( !strcmp("--list", argv[1]) ){
+        s = 2;
+    } else if( !strcmp("--view", argv[1]) ){
+        s = 3;
+    } else if( !strcmp("--remove_treasure", argv[1]) ){
+        s = 4;
+    } else if( !strcmp("--remove_hunt", argv[1]) ){
+        s = 5;
+    } else{
+        perror("no valid operations detected\nvalid operations:\n--add <hunt_id>\n--list <hunt_id>\n--view <hunt_id> <id>\n--remove_treasure <hunt_id> <id>\n--remove_hunt <hunt_id>");
         exit(-1);
     }
 
-    struct dirent* huntinfo;
-
-    while( (huntinfo = readdir(dirp)) != NULL ){
-        if(  !((strcmp(huntinfo->d_name, ".") == 0) || (strcmp(huntinfo->d_name, "..") == 0))  ){
-            printf("%s\n", huntinfo->d_name);
+    switch(s){
+        case 1: //add case
             
-            char* filepath = create_filepath(argv[1], huntinfo->d_name);
-
-            struct stat filestat;
-            if( stat(filepath, &filestat) == -1 ){
-                printf("err\n");
+            char* filepath = create_filepath(argv[2], "treasures");
+            int fd = open(filepath, O_WRONLY | O_APPEND);
+            if(fd == -1){
+                perror("in add: err opening treasures file");
+                exit(-1);
             }
 
-            if(S_ISREG(filestat.st_mode)){
-                printf("regular file\n");
+            treasure* t = get_treasure_data(0);
+            write_treasure(t, fd);
 
-                int fd = open(filepath, O_RDONLY);
-                if(fd == -1){
-                    perror("failed to open");
-                }
-
-                char buffer[1024];
-                int bufflen = read(fd, buffer, 1023);
-                buffer[bufflen] = '\0';
-                printf("%s\n", buffer);
-
-                close(fd);
-
-            } else if(S_ISDIR(filestat.st_mode)){
-                printf("directory\n");
-            }
-
+            close(fd);
             free(filepath);
-        }
+
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        case 4:
+            break;
+        case 5:
+            break;
+        default:
+            break;
     }
 
-    treasure* t = get_treasure_data(0);
+    char* filepath = create_filepath(argv[2], "treasures");
+    read_all_treasures(filepath);
+    free(filepath);
 
-    write_treasure(t,1);
-
-    free(t);
-
-    closedir(dirp);
     return 0;
 }
