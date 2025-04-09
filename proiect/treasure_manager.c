@@ -223,15 +223,22 @@ int is_id(char* id){
     return 1;
 }
 
+void init_hunt(char* dirname){
+    mkdir(dirname, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP);
+
+    char* treasurespath = create_filepath(dirname, "treasures");
+    open(treasurespath, O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP);
+    free(treasurespath);
+
+    char* logpath = create_filepath(dirname, "logged_hunt.txt");
+    open(logpath, O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP);
+    free(logpath);
+}
+
 int main(int argc, char **argv){
     
     if(argc < 3){
         perror("args error; proper usage: treasure_manager --opt <hunt_id> <id>");
-        exit(-1);
-    }
-    
-    if(!is_dir(argv[2])){
-        perror("hunt does not exist");
         exit(-1);
     }
 
@@ -256,6 +263,10 @@ int main(int argc, char **argv){
     switch(s){
         case 1: //add case
             
+            if(!is_dir(argv[2])){
+                init_hunt(argv[2]);
+            }
+
             int fd = open(filepath, O_WRONLY | O_APPEND);
             if(fd == -1){
                 perror("in add: err opening treasures file");
@@ -269,6 +280,11 @@ int main(int argc, char **argv){
 
             break;
         case 2: //list case
+
+            if(!is_dir(argv[2])){
+                perror("not an existing hunt; you can add a hunt with treasure_manager --add <hunt_id>");
+                exit(-1);
+            }
 
             write(1, argv[2], strlen(argv[2]));
             write(1, "\n", 1);
@@ -290,6 +306,11 @@ int main(int argc, char **argv){
             break;
         case 3: //view case
 
+            if(!is_dir(argv[2])){
+                perror("not an existing hunt; you can add a hunt with treasure_manager --add <hunt_id>");
+                exit(-1);
+            }
+
             if(argc < 4){
                 perror("no treasure id given; please provide a valid treasure id");
                 exit(-1);
@@ -298,6 +319,11 @@ int main(int argc, char **argv){
 
             break;
         case 4: //remove_treasure case
+
+            if(!is_dir(argv[2])){
+                perror("not an existing hunt; you can add a hunt with treasure_manager --add <hunt_id>");
+                exit(-1);
+            }
 
             if(argc < 4){
                 perror("no treasure id given; please provide a valid treasure id");
@@ -310,6 +336,12 @@ int main(int argc, char **argv){
 
             break;
         case 5: //remove_hunt case
+
+            if(!is_dir(argv[2])){
+                perror("not an existing hunt; you can add a hunt with treasure_manager --add <hunt_id>");
+                exit(-1);
+            }
+
             break;
         default:
             break;
