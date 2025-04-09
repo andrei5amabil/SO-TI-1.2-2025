@@ -28,6 +28,17 @@ char* create_filepath(char* dir, const char* file){
     return filepath;
 }
 
+char* create_link(const char* hunt_id){
+    int filepath_len = strlen("logged_hunt") + strlen(hunt_id) + 2;
+    char *filepath = malloc(sizeof(char) * filepath_len);
+    if(!filepath){
+        perror("malloc err");
+        exit(-1);
+    }
+    snprintf(filepath, filepath_len, "%s-%s", "logged_hunt", hunt_id);
+    return filepath;
+}
+
 void write_treasure(treasure* t, int fd){
     char buffer[1024];
     int bytes_printed;
@@ -303,6 +314,48 @@ int unique_id(char* filename){
     return uniq_id; 
 }
 
+void log_operation_short(char* log_path, char* op, char* hunt_id){
+    int log_len = strlen("./treasure_manager") + strlen(op) + strlen(hunt_id) + 3;
+    char *log_mess = malloc(sizeof(char) * log_len);
+    if(!log_mess){
+        perror("malloc err");
+        exit(-1);
+    }
+    int bytes_add = snprintf(log_mess, log_len, "%s %s %s", "./treasure_manager", op, hunt_id);
+    int log_fd = open(log_path, O_WRONLY | O_APPEND);
+    write(log_fd, log_mess, bytes_add);
+
+    write(log_fd, " at ", 4);
+
+    struct stat log_stat;
+    stat(log_path, &log_stat);
+    write(log_fd, ctime(&log_stat.st_mtime), strlen(ctime(&log_stat.st_mtime)));
+
+    write(log_fd, "\n", 1);
+    close(log_fd);
+}
+
+void log_operation_long(char* log_path, char* op, char* hunt_id, char* t_id){
+    int log_len = strlen("./treasure_manager") + strlen(op) + strlen(hunt_id) + strlen(t_id) + 4;
+    char *log_mess = malloc(sizeof(char) * log_len);
+    if(!log_mess){
+        perror("malloc err");
+        exit(-1);
+    }
+    int bytes_add = snprintf(log_mess, log_len, "%s %s %s %s", "./treasure_manager", op, hunt_id, t_id);
+    int log_fd = open(log_path, O_WRONLY | O_APPEND);
+    write(log_fd, log_mess, bytes_add);
+
+    write(log_fd, " at ", 4);
+
+    struct stat log_stat;
+    stat(log_path, &log_stat);
+    write(log_fd, ctime(&log_stat.st_mtime), strlen(ctime(&log_stat.st_mtime)));
+
+    write(log_fd, "\n", 1);
+    close(log_fd);
+}
+
 int main(int argc, char **argv){
     
     if(argc < 3){
@@ -327,6 +380,7 @@ int main(int argc, char **argv){
     }
 
     char* filepath = create_filepath(argv[2], "treasures");
+    char* dir_log_path = create_filepath(argv[2], "logged_hunt.txt");
     
     switch(s){
         case 1: //add case
@@ -355,6 +409,9 @@ int main(int argc, char **argv){
             }
             write_treasure(t, fd);
 
+            log_operation_short(dir_log_path, argv[1], argv[2]);
+            symlink(dir_log_path, create_link(argv[2]));
+            
             close(fd);
 
             break;
@@ -382,6 +439,9 @@ int main(int argc, char **argv){
 
             read_all_treasures(filepath);
 
+            log_operation_short(dir_log_path, argv[1], argv[2]);
+            symlink(dir_log_path, create_link(argv[2]));
+
             break;
         case 3: //view case
 
@@ -395,6 +455,9 @@ int main(int argc, char **argv){
                 exit(-1);
             }
             read_specific_treasure(filepath, atoi(argv[3]));
+
+            log_operation_long(dir_log_path, argv[1], argv[2], argv[3]);
+            symlink(dir_log_path, create_link(argv[2]));
 
             break;
         case 4: //remove_treasure case
@@ -412,6 +475,9 @@ int main(int argc, char **argv){
                 exit(-1);
             }
             remove_treasure(filepath, argv[2], atoi(argv[3]));
+
+            log_operation_long(dir_log_path, argv[1], argv[2], argv[3]);
+            symlink(dir_log_path, create_link(argv[2]));
 
             break;
         case 5: //remove_hunt case
@@ -432,12 +498,15 @@ int main(int argc, char **argv){
 
             rmdir(argv[2]);
 
+            log_operation_short(dir_log_path, argv[1], argv[2]);
+            symlink(dir_log_path, create_link(argv[2]));
+
             break;
         default:
             break;
     }
 
     free(filepath);    
-
+    free(dir_log_path);
     return 0;
 }

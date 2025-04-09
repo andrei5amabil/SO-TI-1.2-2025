@@ -1,0 +1,14 @@
+./treasure_manager --add hunt4
+./treasure_manager --add hunt4
+./treasure_manager --list hunt4Wed Apr  9 14:24:27 2025
+
+./treasure_manager --remove_treasure hunt4 2Wed Apr  9 14:24:42 2025
+
+./treasure_manager --list hunt4Wed Apr  9 14:24:46 2025
+
+./treasure_manager --list hunt4 Wed Apr  9 14:26:07 2025
+
+./treasure_manager --list hunt4 at Wed Apr  9 14:26:38 2025
+
+./treasure_manager --list hunt4 at Wed Apr  9 14:44:31 2025
+
