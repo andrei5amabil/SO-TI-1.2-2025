@@ -421,6 +421,17 @@ int main(int argc, char **argv){
                 exit(-1);
             }
 
+
+            char* treasurespath = create_filepath(argv[2], "treasures");
+            remove(treasurespath);
+            free(treasurespath);
+
+            char* logpath = create_filepath(argv[2], "logged_hunt.txt");
+            remove(logpath);         
+            free(logpath);
+
+            rmdir(argv[2]);
+
             break;
         default:
             break;
