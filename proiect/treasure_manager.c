@@ -235,6 +235,74 @@ void init_hunt(char* dirname){
     free(logpath);
 }
 
+int is_unique_id(char* filename, int id){
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        perror("Error opening file");
+        exit(-1);
+    }
+
+    treasure t;
+    while (read(fd, &t.id, sizeof(t.id)) > 0) {
+
+        read(fd, t.user, sizeof(t.user));
+        read(fd, &t.longi, sizeof(t.longi));
+        read(fd, &t.lati, sizeof(t.lati));
+        read(fd, t.clue, sizeof(t.clue));
+        read(fd, &t.value, sizeof(t.value));
+
+        if(id == t.id){
+            close(fd);
+            return 0;
+        }
+    }
+    
+    close(fd);
+    return 1;
+}
+
+int unique_id(char* filename){
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        perror("Error opening file");
+        exit(-1);
+    }
+
+    int uniq_id = 0;
+    int size = 8;
+    int index = 0;
+    int* id_array = (int*)malloc(size*sizeof(int));
+
+    treasure t;
+    while (read(fd, &t.id, sizeof(t.id)) > 0) {
+
+        read(fd, t.user, sizeof(t.user));
+        read(fd, &t.longi, sizeof(t.longi));
+        read(fd, &t.lati, sizeof(t.lati));
+        read(fd, t.clue, sizeof(t.clue));
+        read(fd, &t.value, sizeof(t.value));
+
+        id_array[index] = t.id;
+        index++;
+        if(index == size){
+            size *= 2;
+            id_array = realloc(id_array, sizeof(int)*size);
+        }
+
+    }
+
+    for(int i = 0; i < index; i++){
+        if(uniq_id == id_array[i]){
+            uniq_id++;
+            i = 0;
+        }
+    }
+
+    free(id_array);
+    close(fd);
+    return uniq_id; 
+}
+
 int main(int argc, char **argv){
     
     if(argc < 3){
@@ -274,6 +342,17 @@ int main(int argc, char **argv){
             }
 
             treasure* t = get_treasure_data(0);
+            if(!is_unique_id(filepath, t->id)){
+                perror("the id provided already has an associated treasure;");
+                write(1, "one valid id is: ", 17);
+                char buffer[64];
+                //create unique_id
+                int x = unique_id(filepath);
+                int bytes_printed = snprintf(buffer, sizeof(buffer), "%d", x);
+                write(1, buffer, bytes_printed);
+                write(1, "\n", 1);
+                exit(-1);
+            }
             write_treasure(t, fd);
 
             close(fd);
